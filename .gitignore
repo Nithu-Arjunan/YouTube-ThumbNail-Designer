@@ -1,0 +1,32 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.uv-cache/
+
+# Generated outputs
+outputs/
+final.png
+report.md
+graph.png
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
