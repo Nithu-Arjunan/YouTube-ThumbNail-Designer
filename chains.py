@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import base64
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.request import urlopen
 
 load_dotenv()
 
@@ -15,19 +16,23 @@ load_dotenv()
 ### PROMPTS ###############
 
 prompt_writer_system = """
-You are an expert DALL-E 3 prompt writer for YouTube thumbnails with deep knowledge of visual psychology, click-through rate optimization, and platform trends.
+You are an expert gpt-image-1.5 prompt writer for YouTube thumbnails with deep knowledge of visual psychology, click-through rate optimization, and platform trends.
 
-Given a video topic, one-time web research, and any previous critique, write a single DALL-E 3 prompt for the next thumbnail attempt.
+Given a video topic, one-time web research, and any previous critique, write a single gpt-image-1.5 prompt for the next thumbnail attempt.
 
-Your output must be only the image prompt. Do not include labels, markdown, scores, explanations, or text overlays.
+Your output must be only the image prompt. Do not include labels, markdown, scores, or explanations.
 
 RULES YOU MUST FOLLOW:
 - The thumbnail must work WITHOUT reading the video title - it should communicate value on its own
 - Max 3 visual elements - no clutter
 - No stock-photo aesthetic - high energy, editorial feel
 - Never use centered symmetrical layouts - use tension and movement
-- The prompt must be written for DALL-E 3 at 1792x1024 for a 16:9 YouTube thumbnail
-- Do NOT ask DALL-E to render words, captions, logos, UI text, or typography
+- The prompt must be written for gpt-image-1.5 at 1536x1024 for a 16:9 YouTube thumbnail
+- Include exactly one bold text overlay that acts like a YouTube thumbnail headline
+- The text overlay must be 2-5 words, punchy, curiosity-driven, and directly related to the video topic
+- Specify the exact text overlay in quotation marks inside the image prompt
+- Make the text large, high-contrast, and readable on mobile, placed away from faces and key visual elements
+- Do not ask for logos, UI text, captions, watermarks, or multiple separate text blocks
 - Do not use AI cliche phrases anywhere, especially "delve" or "in today's world"
 
 User's video topic: {user_topic}
@@ -172,13 +177,17 @@ def generate_thumbnail_image(
 ) -> Dict[str, str]:
     openai_client = client or OpenAI()
     image = openai_client.images.generate(
-        model="dall-e-3",
+        model="gpt-image-1.5",
         prompt=image_prompt,
-        size="1792x1024",
-        quality="standard",
-        response_format="b64_json",
+        size="1536x1024",
+        quality="medium",
     )
-    image_base64 = image.data[0].b64_json
+    image_data = image.data[0]
+    image_base64 = getattr(image_data, "b64_json", None)
+    if image_base64 is None:
+        with urlopen(image_data.url) as response:
+            image_base64 = base64.b64encode(response.read()).decode("utf-8")
+
     output_path = Path(output_dir) / f"iteration_{iteration}.png"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_bytes(base64.b64decode(image_base64))

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
-from chains import build_reflector_messages, generate_thumbnail_image
+from chains import build_reflector_messages, generate_thumbnail_image, prompt_writer_system
 
 
 class FakeImages:
@@ -22,6 +22,12 @@ class FakeOpenAIClient:
 
 
 class ThumbnailImageGenerationTests(unittest.TestCase):
+    def test_prompt_writer_instructs_generator_to_include_text_overlay(self):
+        self.assertIn("exactly one bold text overlay", prompt_writer_system)
+        self.assertIn("2-5 words", prompt_writer_system)
+        self.assertIn("quotation marks", prompt_writer_system)
+        self.assertNotIn("Do NOT ask", prompt_writer_system)
+
     def test_generate_thumbnail_image_uses_gpt_image_and_returns_data_url(self):
         client = FakeOpenAIClient()
 
